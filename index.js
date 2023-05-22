@@ -1,12 +1,39 @@
+// https://cars-doctors-server-rho.vercel.app/
+
 const express = require('express')
 const app = express()
 const port = process.env.PORT || 4000;
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const jwt = require('jsonwebtoken')
+
 // middleware
 require('dotenv').config()
 app.use(cors());
 app.use(express.json());
+
+
+// token related
+const verifyJwT = (req, res, next) => {
+  console.log('hitting verify jwt')
+  // console.log(req.headers.authorization)
+  const authorization = req.headers.authorization
+  if (!authorization) {
+    return res.status(401).send({ error: true, message: 'unauthorized access' })
+  }
+  const token = authorization.split(' ')[1]
+  console.log('token inside verify jwt', token)
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
+    if (error) {
+      return res.status(403).send({ error: true, message: 'unauthorized access' })
+    }
+    req.decoded = decoded
+    next()
+  })
+}
+
+
+
 
 // mongodb
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.SECRET_KEY}@cluster0.uwuwq9x.mongodb.net/?retryWrites=true&w=majority`;
@@ -23,7 +50,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
 
     const database = client.db("carDoctor");
@@ -55,6 +82,8 @@ async function run() {
       res.send(service)
     })
 
+
+
     // app post
     app.post('/bookings', async (req, res) => {
       const newBooking = req.body
@@ -65,10 +94,24 @@ async function run() {
 
 
     // app get
-    app.get('/bookings', async (req, res) => {
+    app.get('/bookings', verifyJwT, async (req, res) => {
 
-      // console.log(req.query)
-      console.log(req.query.email)
+      const decoded = req.decoded
+      console.log('decode paichi', decoded)
+
+      if (decoded.email !== req.query.email) {
+        return res.status(403).send({ error: 1, message: 'forbidden access' })
+      }
+      console.log('cameback after verify')
+     
+
+
+      // console.log(req.headers)
+      // console.log(req.headers.authorization)
+
+
+ // console.log(req.query)
+ console.log(req.query.email)
       let query = {}
       if (req.query?.email) {
         query = { email: req.query.email }
@@ -104,6 +147,14 @@ async function run() {
     })
 
 
+    // jwt
+    app.post('/jwt', (req, res) => {
+      const user = req.body
+      console.log(user)
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '10h' });
+      console.log(token)
+      res.send({ token });
+    })
 
 
 
