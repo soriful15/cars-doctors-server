@@ -59,11 +59,40 @@ async function run() {
 
 
     // app get 
-    app.get('/services', async (req, res) => {
-      const cursor = servicesCollection.find()
+    /* app.get('/services', async (req, res) => {
+      // nicher 64 line theke 67 line hocche sort er jonno
+      const query = {}
+      const options = {
+        // sort returned documents in ascending order by title (A->Z)
+        sort: { "price": -1 },
+      };
+      const cursor = servicesCollection.find(query, options)
       const result = await cursor.toArray()
       res.send(result)
     })
+ */
+    app.get('/services', async (req, res) => {
+      // nicher 76 line theke 87 line hocche sort er jonno
+      const sort = req.query.sort
+      // const query = {}
+      // upor query sobar jonno
+
+      // const query = { price: { $lte: 150 } };
+      const query = { price: { $gte: 50 , $lte:80} };
+    
+      const options = {
+        // sort returned documents in ascending order by title (A->Z)
+        sort: { "price": sort ==='ase'? 1: -1 },
+      };
+      const cursor = servicesCollection.find(query, options)
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+
+
+
+
     // app get dhara id
     app.get('/services/:id', async (req, res) => {
       const id = req.params.id
@@ -103,15 +132,15 @@ async function run() {
         return res.status(403).send({ error: 1, message: 'forbidden access' })
       }
       console.log('cameback after verify')
-     
+
 
 
       // console.log(req.headers)
       // console.log(req.headers.authorization)
 
 
- // console.log(req.query)
- console.log(req.query.email)
+      // console.log(req.query)
+      console.log(req.query.email)
       let query = {}
       if (req.query?.email) {
         query = { email: req.query.email }
